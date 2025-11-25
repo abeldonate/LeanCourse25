@@ -114,8 +114,11 @@ Remember that Lean has proof irrelevance: any two proofs of a given proposition 
 example (choiceFunction : ∀ (α : Type) (p : α → Prop) (_h : ∃ x, p x), α)
     (h : ∀ (α : Type) (p : α → Prop) (x : α) (hx : p x), choiceFunction α p ⟨x, hx⟩ = x) :
     False := by
-  sorry
-
+  apply zero_ne_one (α := ℕ)
+  calc
+    0 = choiceFunction ℕ (fun n ↦ True) ⟨0, True.intro⟩ := by rw [h _ _ _ True.intro]
+    _ = choiceFunction ℕ (fun n ↦ True) ⟨1, True.intro⟩ := by rfl
+    _ = 1 := by rw [h _ _ _ True.intro]
 
 end choice
 
@@ -147,7 +150,21 @@ attribute [-simp] Finset.card_powerset
 
 lemma finset_card_powerset (α : Type*) (s : Finset α) :
     Finset.card (Finset.powerset s) = 2 ^ Finset.card s := by
-  sorry
-  done
+  classical
+  induction s using Finset.induction with
+  | empty => rfl
+  | insert x s hxs ih =>
+    have h1 : Disjoint s.powerset (Finset.image (insert x) s.powerset) := by
+      simp_rw [Finset.disjoint_iff_ne, Finset.forall_mem_image]
+      intro a ha b hb
+      suffices x ∉ a by grind
+      exact Finset.notMem_of_mem_powerset_of_notMem ha hxs
+    have h2 : InjOn (insert x) (s.powerset : Set (Finset α)) := by
+      intro a ha b hb hab
+      rw [← Finset.erase_insert (Finset.notMem_of_mem_powerset_of_notMem ha hxs), hab]
+      rw [Finset.erase_insert]
+      exact Finset.notMem_of_mem_powerset_of_notMem hb hxs
+    rw [Finset.powerset_insert s x, Finset.card_union_of_disjoint h1, Finset.card_image_of_injOn h2,
+    ih, Finset.card_insert_of_notMem hxs, pow_succ, mul_two]
 
 end cardinality

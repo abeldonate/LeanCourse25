@@ -12,7 +12,8 @@ open Subgroup
 
 -- Prove that the trivial subgroup of the integers has index zero.
 example : (⊥ : AddSubgroup ℤ).index = 0 := by
-  sorry
+  rw [@AddSubgroup.index_bot]
+  exact Nat.card_eq_zero_of_infinite
 
 /- State and prove that the preimage of `U` under the composition of `φ` and `ψ` is a preimage
 of a preimage of `U`. This should be an equality of subgroups! -/
@@ -86,11 +87,47 @@ Hint 2: to prove associativity, use something like `intros; ext; apply mul_assoc
 #check Exists.choose_spec
 def IsAUnit (x : R) : Prop := ∃ y, y * x = 1
 
-def IsAUnit.mul {x y : R} (hx : IsAUnit x) (hy : IsAUnit y) : IsAUnit (x * y) := by
-  sorry
+lemma IsAUnit.mul {x y : R} (hx : IsAUnit x) (hy : IsAUnit y) : IsAUnit (x * y) := by
+  unfold IsAUnit at *
+  obtain ⟨xinv, hxi⟩ := hx
+  obtain ⟨yinv, hyi⟩ := hy
+  use (xinv * yinv)
+  rw [mul_right_comm xinv yinv (x * y)]
+  rw [← mul_assoc xinv x y]
+  simp_rw [hxi, one_mul]
+  rw [mul_comm y yinv, hyi]
   done
 
-instance groupUnits : Group {x : R // IsAUnit x} := sorry
+
+instance groupUnits : Group {x : R // IsAUnit x} where
+  mul := fun x y ↦ ⟨(x * y), by exact IsAUnit.mul x.property y.property⟩
+  mul_assoc := by
+    simp
+    intro a ha b hb c hc
+    ext
+    apply mul_assoc
+  one := ⟨1, by use 1; simp⟩
+  one_mul := by
+    intro a
+    refine Eq.symm (Subtype.eq ?_)
+    exact (one_mul a.val).symm
+  mul_one := by
+    intro a
+    refine Eq.symm (Subtype.eq ?_)
+    exact (mul_one a.val).symm
+  npow_zero := by
+    intro a
+    exact rfl
+  npow_succ := by
+    intro a b
+    exact rfl
+  inv := fun x ↦ ⟨
+  div_eq_mul_inv := _
+  zpow_zero' := _
+  zpow_succ' := _
+  zpow_neg' := _
+  inv_mul_cancel := _
+
 
 -- you have the correct group structure if this is true by `rfl`
 example (x y : {x : R // IsAUnit x}) : (↑(x * y) : R) = ↑x * ↑y := by sorry
